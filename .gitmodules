@@ -1,0 +1,3 @@
+[submodule "src/main/resources/data/game-resources"]
+	path = src/main/resources/data/game-resources
+	url = https://github.com/AraumiTX/game-resources.git
