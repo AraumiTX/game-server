@@ -43,6 +43,7 @@ class GameServer : IGameServer, KoinComponent {
 
         launch { connection.receive() }
         launch { connection.decodeCommands() }
+        launch { connection.sendCommands() }
       }
     }
   }

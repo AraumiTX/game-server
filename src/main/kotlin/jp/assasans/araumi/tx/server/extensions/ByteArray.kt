@@ -24,7 +24,6 @@ fun String.decodeHex(): ByteArray {
     .toByteArray()
 }
 
-@OptIn(ExperimentalUnsignedTypes::class)
 fun ByteBuffer.toHexString(withSpaces: Boolean = false) = getFully().toHexString(withSpaces)
 
 fun ByteBuffer.getNBytes(count: Int): ByteArray {

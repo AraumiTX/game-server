@@ -7,7 +7,7 @@ import jp.assasans.araumi.tx.server.protocol.ProtocolId
 
 @ProtocolId(1433752208915)
 object UserTemplate : IEntityTemplate {
-  suspend fun create() = entity("") {
+  fun create() = entity("") {
     component(UserComponent())
     component(UserOnlineComponent())
     component(UserUidComponent("Assasans"))

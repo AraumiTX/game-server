@@ -6,6 +6,7 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import io.ktor.network.sockets.*
 import io.ktor.util.*
@@ -28,13 +29,14 @@ interface IPlayerConnection : IWithCoroutineScope {
 
   suspend fun receive()
   suspend fun decodeCommands()
+  suspend fun sendCommands()
 
-  suspend fun send(command: ICommand)
+  fun send(command: ICommand)
   suspend fun close()
 }
 
-suspend inline fun IPlayerConnection.share(entity: IEntity) = send(entity.toShareCommand())
-suspend inline fun IEntity.shareTo(connection: IPlayerConnection) = connection.share(this)
+@Suppress("NOTHING_TO_INLINE")
+inline fun IPlayerConnection.share(entity: IEntity) = send(entity.toShareCommand())
 
 abstract class PlayerConnection(
   coroutineContext: CoroutineContext
@@ -43,19 +45,24 @@ abstract class PlayerConnection(
 
   protected val protocol: IProtocol by inject()
 
+  private val outgoingCommands: Channel<ICommand> = Channel(Channel.UNLIMITED)
+
   override val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
 
-  override suspend fun send(command: ICommand) {
-    val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
+  override fun send(command: ICommand) {
+    outgoingCommands.trySend(command).getOrThrow()
+  }
 
-    protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).encode(buffer, command)
+  override suspend fun sendCommands() {
+    for(command in outgoingCommands) {
+      val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
 
-    val channel = ByteChannel(true)
-    buffer.wrap(channel)
+      protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).encode(buffer, command)
 
-    val data = channel.toByteArray()
-
-    send(data)
+      val channel = ByteChannel(true)
+      buffer.wrap(channel)
+      send(channel.toByteArray())
+    }
   }
 
   protected abstract suspend fun send(data: ByteArray)

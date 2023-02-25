@@ -10,29 +10,29 @@ interface IEntity {
 
   val components: Set<IComponent>
 
-  suspend fun share(connection: IPlayerConnection)
-  suspend fun unshare(connection: IPlayerConnection)
+  fun share(connection: IPlayerConnection)
+  fun unshare(connection: IPlayerConnection)
 
   fun hasComponent(type: KClass<out IComponent>): Boolean
   fun getComponent(type: KClass<out IComponent>): IComponent
-  suspend fun addComponent(component: IComponent)
-  suspend fun removeComponent(type: KClass<out IComponent>)
-  suspend fun changeComponent(component: IComponent)
+  fun addComponent(component: IComponent)
+  fun removeComponent(type: KClass<out IComponent>)
+  fun changeComponent(component: IComponent)
 
-  suspend fun send(event: IEvent)
+  fun send(event: IEvent)
 }
 
 inline fun <reified T : IComponent> IEntity.hasComponent() = hasComponent(T::class)
 inline fun <reified T : IComponent> IEntity.getComponent(): T = getComponent(T::class) as T
-suspend inline fun <reified T : IComponent> IEntity.removeComponent() = removeComponent(T::class)
-suspend inline fun <reified T : IComponent> IEntity.changeComponent(block: T.() -> Unit) {
+inline fun <reified T : IComponent> IEntity.removeComponent() = removeComponent(T::class)
+inline fun <reified T : IComponent> IEntity.changeComponent(block: T.() -> Unit) {
   changeComponent(getComponent<T>().apply(block))
 }
 
 inline fun <reified T : IComponent> Array<IEntity>.with(): T = asIterable().singleOf()
 
 interface IEntityInternal {
-  suspend fun addComponent(component: IComponent, excluded: IPlayerConnection? = null)
-  suspend fun removeComponent(type: KClass<out IComponent>, excluded: IPlayerConnection? = null)
-  suspend fun changeComponent(component: IComponent, excluded: IPlayerConnection? = null)
+  fun addComponent(component: IComponent, excluded: IPlayerConnection? = null)
+  fun removeComponent(type: KClass<out IComponent>, excluded: IPlayerConnection? = null)
+  fun changeComponent(component: IComponent, excluded: IPlayerConnection? = null)
 }
