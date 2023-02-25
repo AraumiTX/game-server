@@ -18,7 +18,8 @@ class EntityBuilder(override val id: Long) : IEntityBuilder, KoinComponent {
   }
 }
 
+inline fun entity(id: Long, block: IEntityBuilder.() -> Unit): IEntity = EntityBuilder(id).apply(block).build()
 inline fun entity(block: IEntityBuilder.() -> Unit): IEntity {
   val entityRegistry: IEntityRegistry by inject()
-  return EntityBuilder(entityRegistry.freeId).apply(block).build()
+  return entity(entityRegistry.freeId, block)
 }

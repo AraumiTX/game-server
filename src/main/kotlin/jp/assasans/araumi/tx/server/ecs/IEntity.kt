@@ -17,15 +17,22 @@ interface IEntity {
   fun getComponent(type: KClass<out IComponent>): IComponent
   suspend fun addComponent(component: IComponent)
   suspend fun removeComponent(type: KClass<out IComponent>)
+  suspend fun changeComponent(component: IComponent)
+
+  suspend fun send(event: IEvent)
 }
 
 inline fun <reified T : IComponent> IEntity.hasComponent() = hasComponent(T::class)
-inline fun <reified T : IComponent> IEntity.getComponent() = getComponent(T::class)
+inline fun <reified T : IComponent> IEntity.getComponent(): T = getComponent(T::class) as T
 suspend inline fun <reified T : IComponent> IEntity.removeComponent() = removeComponent(T::class)
+suspend inline fun <reified T : IComponent> IEntity.changeComponent(block: T.() -> Unit) {
+  changeComponent(getComponent<T>().apply(block))
+}
 
 inline fun <reified T : IComponent> Array<IEntity>.with(): T = asIterable().singleOf()
 
 interface IEntityInternal {
   suspend fun addComponent(component: IComponent, excluded: IPlayerConnection? = null)
   suspend fun removeComponent(type: KClass<out IComponent>, excluded: IPlayerConnection? = null)
+  suspend fun changeComponent(component: IComponent, excluded: IPlayerConnection? = null)
 }

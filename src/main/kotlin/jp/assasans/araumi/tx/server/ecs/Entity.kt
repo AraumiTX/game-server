@@ -6,7 +6,9 @@ import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import jp.assasans.araumi.tx.server.protocol.command.ComponentAddCommand
+import jp.assasans.araumi.tx.server.protocol.command.ComponentChangeCommand
 import jp.assasans.araumi.tx.server.protocol.command.ComponentRemoveCommand
+import jp.assasans.araumi.tx.server.protocol.command.SendEventCommand
 import jp.assasans.araumi.tx.server.protocol.toShareCommand
 import jp.assasans.araumi.tx.server.protocol.toUnshareCommand
 
@@ -53,11 +55,12 @@ class Entity(
 
   override suspend fun addComponent(component: IComponent) = addComponent(component, excluded = null)
   override suspend fun removeComponent(type: KClass<out IComponent>) = removeComponent(type, excluded = null)
+  override suspend fun changeComponent(component: IComponent) = changeComponent(component, excluded = null)
 
   override suspend fun addComponent(component: IComponent, excluded: IPlayerConnection?) {
-    synchronized(_components) {
-      val type = component::class
+    val type = component::class
 
+    synchronized(_components) {
       require(!_components.contains(type)) { "Entity $id already has component $type" }
       _components[type] = component
     }
@@ -78,6 +81,30 @@ class Entity(
       _sharedPlayers.forEach { player ->
         if(player == excluded) return@forEach
         player.send(ComponentRemoveCommand(entity = this, type))
+      }
+    }
+  }
+
+  override suspend fun changeComponent(component: IComponent, excluded: IPlayerConnection?) {
+    val type = component::class
+
+    synchronized(_components) {
+      require(_components.contains(type)) { "Entity $id does not have component $type" }
+      _components[type] = component
+    }
+
+    _sharedPlayersMutex.withLock {
+      _sharedPlayers.forEach { player ->
+        if(player == excluded) return@forEach
+        player.send(ComponentChangeCommand(entity = this, component))
+      }
+    }
+  }
+
+  override suspend fun send(event: IEvent) {
+    _sharedPlayersMutex.withLock {
+      _sharedPlayers.forEach { player ->
+        player.send(SendEventCommand(event, arrayOf(this)))
       }
     }
   }

@@ -7,6 +7,7 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.withNullability
 import jp.assasans.araumi.tx.server.extensions.kotlinClass
 import jp.assasans.araumi.tx.server.protocol.*
 import jp.assasans.araumi.tx.server.protocol.codec.Codec
@@ -22,7 +23,7 @@ class StructCodecFactory : ICodecFactory {
 
     val properties = getSortedProperties(info.type.kotlinClass).map { property ->
       PropertyRequest(property, TypeCodecInfo(
-        type = property.returnType,
+        type = property.returnType.withNullability(false),
         nullable = property.returnType.isMarkedNullable,
         varied = property.hasAnnotation<ProtocolVaried>(),
         annotations = property.annotations.filter { it is ProtocolCollection }.toSet()
@@ -35,9 +36,15 @@ class StructCodecFactory : ICodecFactory {
   private fun getSortedProperties(type: KClass<*>): List<KProperty1<*, *>> {
     val properties = type.memberProperties.filterNot { it.hasAnnotation<ProtocolIgnore>() }
     return properties.sortedWith { a, b ->
-      val sort = (getPositionOverride(a) - getPositionOverride(b)).sign
-      if(sort == 0) a.name.compareTo(b.name) else sort
+      val sort = (getPositionOverride(a) - getPositionOverride(b)).sign // Compare by [@ProtocolPosition]
+      if(sort == 0) getNameOverride(a).compareTo(getNameOverride(b)) // Compare by name or [@ProtocolName]
+      else sort
     }
+  }
+
+  private fun getNameOverride(property: KProperty<*>): String {
+    property.findAnnotation<ProtocolName>()?.let { return it.name }
+    return property.name
   }
 
   private fun getPositionOverride(property: KProperty<*>): Int {

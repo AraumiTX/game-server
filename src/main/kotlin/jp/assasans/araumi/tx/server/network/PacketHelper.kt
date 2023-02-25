@@ -15,6 +15,7 @@ object PacketHelper {
     stream.writeInt(buffer.data.availableForRead)
 
     // Optional map
+    println("Written ${buffer.optionalMap.size} bytes of optional map")
     stream.writeFully(buffer.optionalMap.map, 0, getSizeInBytes(buffer.optionalMap.size))
 
     // Data

@@ -1,4 +1,4 @@
-package jp.assasans.araumi.tx.server.protocol.codec.container
+package jp.assasans.araumi.tx.server.protocol.codec.container.array
 
 import jp.assasans.araumi.tx.server.extensions.kotlinClass
 import jp.assasans.araumi.tx.server.network.ProtocolBuffer

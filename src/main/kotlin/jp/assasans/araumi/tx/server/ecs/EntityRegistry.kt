@@ -16,6 +16,8 @@ class EntityRegistry : IEntityRegistry {
     synchronized(entities) {
       require(!entities.contains(entity.id)) { "Entity ${entity.id} already present in registry" }
       entities[entity.id] = entity
+
+      nextId.getAndIncrement()
     }
   }
 

@@ -4,6 +4,7 @@ import kotlin.collections.set
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 import kotlinx.datetime.Instant
+import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import jp.assasans.araumi.tx.server.ecs.IEntity
@@ -13,10 +14,9 @@ import jp.assasans.araumi.tx.server.protocol.codec.ICodec
 import jp.assasans.araumi.tx.server.protocol.codec.complex.CommandCodec
 import jp.assasans.araumi.tx.server.protocol.codec.complex.EntityCodec
 import jp.assasans.araumi.tx.server.protocol.codec.complex.TemplateAccessorCodec
-import jp.assasans.araumi.tx.server.protocol.codec.container.OptionalCodec
+import jp.assasans.araumi.tx.server.protocol.codec.container.array.ByteArrayCodec
 import jp.assasans.araumi.tx.server.protocol.codec.factory.*
 import jp.assasans.araumi.tx.server.protocol.codec.info.ICodecInfo
-import jp.assasans.araumi.tx.server.protocol.codec.info.ITypeCodecInfo
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo
 import jp.assasans.araumi.tx.server.protocol.codec.primitive.*
 import jp.assasans.araumi.tx.server.protocol.command.*
@@ -34,6 +34,8 @@ val KClass<*>.protocolId: ProtocolId
   get() = requireNotNull(findAnnotation())
 
 class Protocol : IProtocol, KoinComponent {
+  private val logger = KotlinLogging.logger { }
+
   private val classScanner: IClassScanner by inject()
 
   private val types: MutableMap<Long, KClass<*>> = mutableMapOf()
@@ -55,6 +57,10 @@ class Protocol : IProtocol, KoinComponent {
     register(String::class, StringCodec())
     register(Instant::class, InstantCodec())
 
+    // Arrays of primitives
+    register(ByteArray::class, ByteArrayCodec())
+
+    // ECS
     register(TemplateAccessor::class, TemplateAccessorCodec())
     register(IEntity::class, EntityCodec())
 
@@ -74,6 +80,7 @@ class Protocol : IProtocol, KoinComponent {
     factories.add(SetCodecFactory())
     factories.add(MapCodecFactory())
     factories.add(EnumCodecFactory())
+    factories.add(GroupComponentCodecFactory())
     factories.add(VariedCodecFactory())
     factories.add(OptionalCodecFactory())
     factories.add(StructCodecFactory())
@@ -108,12 +115,10 @@ class Protocol : IProtocol, KoinComponent {
     // Try to create from factories
     for(factory in factories) {
       codec = factory.create(this@Protocol, info) ?: continue
+      logger.debug { "Created $codec with $factory for $info" }
 
-      // Wrap into OptionalCodec if nullable
-      if(info is ITypeCodecInfo && info.nullable) {
-        codec = OptionalCodec(codec)
-      }
-      initAndRegister(info, codec)
+      (codec as Codec<*>).init(this)
+      // TODO: Cache codec (by constructor arguments?)
       return codec
     }
 

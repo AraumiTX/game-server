@@ -1,22 +1,22 @@
 package jp.assasans.araumi.tx.server.ecs.entrance.login
 
-import kotlin.random.Random
-import io.ktor.util.*
 import mu.KotlinLogging
 import jp.assasans.araumi.tx.server.ecs.IEntity
+import jp.assasans.araumi.tx.server.ecs.IServerEvent
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import jp.assasans.araumi.tx.server.protocol.ProtocolId
 
-@ProtocolId(1458846544326)
-class IntroduceUserByEmailEvent(
-  captcha: String?,
-  val email: String
-) : IntroduceUserEvent(captcha) {
+@ProtocolId(1438075609642)
+data class AutoLoginUserEvent(
+  val uid: String,
+  val encryptedToken: ByteArray,
+  val hardwareFingerprint: String
+) : IServerEvent {
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
     val logger = KotlinLogging.logger { }
     val (clientSession) = entities
 
-    logger.debug { "Login by email: $email" }
-    clientSession.send(PersonalPasscodeEvent(Random.nextBytes(32).encodeBase64())) // Same as hash length (SHA-256)
+    // TODO
+    clientSession.send(AutoLoginFailedEvent())
   }
 }

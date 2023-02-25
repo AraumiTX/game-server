@@ -107,7 +107,11 @@ class SocketPlayerConnection(
         val command = protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).decode(buffer)
         logger.debug { "Received $command" }
 
-        command.execute(this)
+        try {
+          command.execute(this)
+        } catch(exception: Exception) {
+          logger.error(exception) { "Failed to execute command $command" }
+        }
       }
     }
   }
