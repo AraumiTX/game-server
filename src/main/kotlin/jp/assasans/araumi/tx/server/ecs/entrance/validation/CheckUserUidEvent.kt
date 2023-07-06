@@ -13,10 +13,7 @@ data class CheckUserUidEvent(
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
     val (clientSession) = entities
 
-    if(username != "taken") {
-      clientSession.send(UserUidVacantEvent(username))
-    } else {
-      clientSession.send(UserUidOccupiedEvent(username))
-    }
+    if (username == "taken") clientSession.send(UserUidOccupiedEvent(username))
+    else clientSession.send(UserUidVacantEvent(username))
   }
 }

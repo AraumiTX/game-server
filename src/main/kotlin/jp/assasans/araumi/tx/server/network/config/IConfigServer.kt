@@ -59,12 +59,10 @@ class ConfigServer : IConfigServer, KoinComponent {
         }
 
         get("update/{buildTarget}") {
-          val buildTarget = requireNotNull(call.parameters["buildTarget"])
-
           call.respondBytes {
             mapper.writeValueAsBytes(UpdateConfiguration(
               lastClientVersion = "master-48606",
-              distributionUrl = "http://127.0.0.1:8080/update/$buildTarget.tgz",
+              distributionUrl = "http://127.0.0.1:8080/resources/StandaloneWindows/tankix.tgz",
               executable = "tankix.exe"
             ))
           }

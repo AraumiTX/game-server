@@ -16,9 +16,6 @@ class OptionalCodec<T>(val codec: ICodec<T>) : Codec<T?>() {
   }
 
   override suspend fun encode(buffer: ProtocolBuffer, value: T?) {
-    println("Optional encode: $value (null: ${value == null})")
-    Throwable().fillInStackTrace().printStackTrace()
-
     buffer.optionalMap.add(value == null)
     if(value == null) return
 
