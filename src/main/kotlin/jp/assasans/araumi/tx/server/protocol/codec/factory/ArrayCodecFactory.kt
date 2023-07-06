@@ -18,10 +18,12 @@ class ArrayCodecFactory : ICodecFactory {
     if(type.isPrimitive) error("No primitive array codec available for ${type.kotlin}")
 
     val annotation = info.annotations.singleOfOrNull() ?: ProtocolCollection.Default
-    return ArrayCodec<Any>(TypeCodecInfo(
-      type = type.kotlin,
-      annotation.nullable,
-      annotation.varied
-    ))
+    return ArrayCodec<Any>(
+      TypeCodecInfo(
+        type = type.kotlin,
+        annotation.nullable,
+        annotation.varied
+      )
+    )
   }
 }

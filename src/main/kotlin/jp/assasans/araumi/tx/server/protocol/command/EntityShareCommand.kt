@@ -1,7 +1,7 @@
 package jp.assasans.araumi.tx.server.protocol.command
 
-import jp.assasans.araumi.tx.server.ecs.IComponent
-import jp.assasans.araumi.tx.server.ecs.TemplateAccessor
+import jp.assasans.araumi.tx.server.ecs.components.IComponent
+import jp.assasans.araumi.tx.server.ecs.entities.templates.TemplateAccessor
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import jp.assasans.araumi.tx.server.protocol.ProtocolCollection
 import jp.assasans.araumi.tx.server.protocol.ProtocolPosition

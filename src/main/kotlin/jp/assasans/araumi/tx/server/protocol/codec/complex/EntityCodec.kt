@@ -2,8 +2,8 @@ package jp.assasans.araumi.tx.server.protocol.codec.complex
 
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import jp.assasans.araumi.tx.server.ecs.IEntity
-import jp.assasans.araumi.tx.server.ecs.IEntityRegistry
+import jp.assasans.araumi.tx.server.ecs.entities.IEntity
+import jp.assasans.araumi.tx.server.ecs.entities.IEntityRegistry
 import jp.assasans.araumi.tx.server.network.ProtocolBuffer
 import jp.assasans.araumi.tx.server.protocol.codec.Codec
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo

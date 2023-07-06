@@ -16,10 +16,12 @@ class SetCodecFactory : ICodecFactory {
     if(info !is ITypeCodecInfo || !info.type.kotlinClass.isSubclassOf(Set::class)) return null
 
     val annotation = info.type.findAnnotation() ?: ProtocolCollection.Default
-    return SetCodec<Any>(TypeCodecInfo(
-      type = requireNotNull(info.type.arguments.single().type) { "Invalid Set<T> generic argument" },
-      annotation.nullable,
-      annotation.varied
-    ))
+    return SetCodec<Any>(
+      TypeCodecInfo(
+        type = requireNotNull(info.type.arguments.single().type) { "Invalid Set<T> generic argument" },
+        annotation.nullable,
+        annotation.varied
+      )
+    )
   }
 }

@@ -16,10 +16,12 @@ class ListCodecFactory : ICodecFactory {
     if(info !is ITypeCodecInfo || !info.type.kotlinClass.isSubclassOf(List::class)) return null
 
     val annotation = info.type.findAnnotation() ?: ProtocolCollection.Default
-    return ListCodec<Any>(TypeCodecInfo(
-      type = requireNotNull(info.type.arguments.single().type) { "Invalid List<T> generic argument" },
-      annotation.nullable,
-      annotation.varied
-    ))
+    return ListCodec<Any>(
+      TypeCodecInfo(
+        type = requireNotNull(info.type.arguments.single().type) { "Invalid List<T> generic argument" },
+        annotation.nullable,
+        annotation.varied
+      )
+    )
   }
 }

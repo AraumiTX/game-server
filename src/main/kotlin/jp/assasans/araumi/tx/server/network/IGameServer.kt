@@ -1,12 +1,12 @@
 package jp.assasans.araumi.tx.server.network
 
 import kotlin.coroutines.coroutineContext
-import kotlinx.coroutines.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
+import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
-import jp.assasans.araumi.tx.server.ecs.entrance.ClientSessionTemplate
+import jp.assasans.araumi.tx.server.ecs.entities.templates.entrance.ClientSessionTemplate
 import jp.assasans.araumi.tx.server.utils.IWithCoroutineScope
 
 interface IGameServer : IWithCoroutineScope {
@@ -37,8 +37,10 @@ class GameServer : IGameServer, KoinComponent {
       val connection: IPlayerConnection = SocketPlayerConnection(socket)
       coroutineScope.launch {
         launch {
-          val entity = ClientSessionTemplate.create()
-          entity.share(connection)
+          val clientSession = ClientSessionTemplate.create()
+
+          connection.share(clientSession)
+          connection.clientSession = clientSession
         }
 
         launch { connection.receive() }

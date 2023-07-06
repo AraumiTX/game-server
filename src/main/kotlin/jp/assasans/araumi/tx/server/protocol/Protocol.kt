@@ -7,8 +7,8 @@ import kotlinx.datetime.Instant
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import jp.assasans.araumi.tx.server.ecs.IEntity
-import jp.assasans.araumi.tx.server.ecs.TemplateAccessor
+import jp.assasans.araumi.tx.server.ecs.entities.IEntity
+import jp.assasans.araumi.tx.server.ecs.entities.templates.TemplateAccessor
 import jp.assasans.araumi.tx.server.protocol.codec.Codec
 import jp.assasans.araumi.tx.server.protocol.codec.ICodec
 import jp.assasans.araumi.tx.server.protocol.codec.complex.CommandCodec
@@ -115,7 +115,7 @@ class Protocol : IProtocol, KoinComponent {
     // Try to create from factories
     for(factory in factories) {
       codec = factory.create(this@Protocol, info) ?: continue
-      logger.debug { "Created $codec with $factory for $info" }
+      // logger.debug { "Created $codec with $factory for $info" }
 
       (codec as Codec<*>).init(this)
       // TODO: Cache codec (by constructor arguments?)

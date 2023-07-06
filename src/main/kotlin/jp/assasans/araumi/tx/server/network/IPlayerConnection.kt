@@ -1,31 +1,47 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package jp.assasans.araumi.tx.server.network
 
 import java.nio.ByteBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import io.ktor.network.sockets.*
+import io.ktor.util.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
-import io.ktor.network.sockets.*
-import io.ktor.util.*
-import io.ktor.utils.io.*
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import jp.assasans.araumi.tx.server.ecs.IEntity
-import jp.assasans.araumi.tx.server.extensions.toHexString
+import jp.assasans.araumi.tx.server.ecs.Player
+import jp.assasans.araumi.tx.server.ecs.components.item.MountedItemComponent
+import jp.assasans.araumi.tx.server.ecs.components.user.UserGroupComponent
+import jp.assasans.araumi.tx.server.ecs.entities.IEntity
+import jp.assasans.araumi.tx.server.ecs.entities.getComponent
+import jp.assasans.araumi.tx.server.ecs.entities.templates.user.UserTemplate
+import jp.assasans.araumi.tx.server.ecs.events.entrance.login.SaveAutoLoginTokenEvent
+import jp.assasans.araumi.tx.server.ecs.events.user.friends.FriendsLoadedEvent
+import jp.assasans.araumi.tx.server.ecs.events.user.payment.PaymentSectionLoadedEvent
+import jp.assasans.araumi.tx.server.ecs.globalEntities.*
 import jp.assasans.araumi.tx.server.protocol.IProtocol
 import jp.assasans.araumi.tx.server.protocol.buffer.OptionalMap
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo
 import jp.assasans.araumi.tx.server.protocol.command.ICommand
 import jp.assasans.araumi.tx.server.protocol.getCodec
-import jp.assasans.araumi.tx.server.protocol.toShareCommand
 import jp.assasans.araumi.tx.server.utils.IWithCoroutineScope
 
 interface IPlayerConnection : IWithCoroutineScope {
   val active: Boolean
+
+  var player: Player
+  var user: IEntity
+
+  var clientSession: IEntity
+
+  fun login(rememberMe: Boolean, passwordEncipher: String, hardwareFingerprint: String)
 
   suspend fun receive()
   suspend fun decodeCommands()
@@ -35,8 +51,9 @@ interface IPlayerConnection : IWithCoroutineScope {
   suspend fun close()
 }
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun IPlayerConnection.share(entity: IEntity) = send(entity.toShareCommand())
+inline fun IPlayerConnection.share(entity: IEntity) = entity.share(this)
+inline fun IPlayerConnection.share(vararg entities: IEntity) = entities.forEach(::share)
+inline fun IPlayerConnection.share(entities: Collection<IEntity>) = entities.forEach(::share)
 
 abstract class PlayerConnection(
   coroutineContext: CoroutineContext
@@ -84,6 +101,50 @@ class SocketPlayerConnection(
   override var active: Boolean = false
     private set
 
+  override lateinit var player: Player
+  override lateinit var user: IEntity
+
+  override lateinit var clientSession: IEntity
+
+  override fun login(
+    rememberMe: Boolean,
+    passwordEncipher: String,
+    hardwareFingerprint: String
+  ) {
+    if(rememberMe) clientSession.send(SaveAutoLoginTokenEvent(username = player.username, token = ByteArray(32)))
+
+    user = UserTemplate.create(player)
+
+    share(user)
+    clientSession.addComponent(user.getComponent<UserGroupComponent>())
+
+    val entities =
+      Hulls.getUserTemplateItems(this) +
+      Weapons.getUserTemplateItems(this) +
+      Paints.getUserTemplateItems(this) +
+      Coatings.getUserTemplateItems(this) +
+      HullSkins.getUserTemplateItems(this) +
+      WeaponSkins.getUserTemplateItems(this)
+
+    entities.forEach {
+      share(it)
+
+      if(it.id == Hulls.Hunter.id ||
+         it.id == Weapons.Smoky.id ||
+         it.id == Paints.Green.id ||
+         it.id == Coatings.None.id ||
+         it.id == HullSkins.HunterM0.id ||
+         it.id == WeaponSkins.SmokyM0.id
+      )
+        it.addComponent(MountedItemComponent())
+    }
+
+    clientSession.send(PaymentSectionLoadedEvent())
+    clientSession.send(FriendsLoadedEvent(player.acceptedFriendsIds, player.incomingFriendsIds, player.outgoingFriendsIds))
+
+    logger.info { "${player.username} logged in" }
+  }
+
   override suspend fun receive() {
     active = true
     try {
@@ -92,7 +153,7 @@ class SocketPlayerConnection(
         val read = reader.readAvailable(decodeBuffer)
         if(read == -1) break
 
-        logger.trace { "Received $read bytes: ${decodeBuffer.slice(0, read).toHexString()}" }
+        // logger.trace { "Received $read bytes: ${decodeBuffer.slice(0, read).toHexString()}" }
         decodeChannel.writeFully(decodeBuffer.slice(0, read))
       }
     } catch(exception: Exception) {
@@ -112,7 +173,7 @@ class SocketPlayerConnection(
         // logger.trace { "decodeCommands protocol buffer available: ${buffer.reader.availableForRead}" }
 
         val command = protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).decode(buffer)
-        logger.debug { "Received $command" }
+        // logger.debug { "Received $command" }
 
         try {
           command.execute(this)
@@ -125,7 +186,7 @@ class SocketPlayerConnection(
 
   override suspend fun send(data: ByteArray) {
     writer.writeFully(data)
-    logger.trace { "Sent ${data.size} bytes: ${data.toHexString()}" }
+    // logger.trace { "Sent ${data.size} bytes: ${data.toHexString()}" }
   }
 
   override suspend fun close() {

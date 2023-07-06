@@ -22,12 +22,14 @@ class StructCodecFactory : ICodecFactory {
     if(info !is ITypeCodecInfo) return null
 
     val properties = getSortedProperties(info.type.kotlinClass).map { property ->
-      PropertyRequest(property, TypeCodecInfo(
-        type = property.returnType.withNullability(false),
-        nullable = property.returnType.isMarkedNullable,
-        varied = property.hasAnnotation<ProtocolVaried>(),
-        annotations = property.annotations.filter { it is ProtocolCollection }.toSet()
-      ))
+      PropertyRequest(
+        property, TypeCodecInfo(
+          type = property.returnType.withNullability(false),
+          nullable = property.returnType.isMarkedNullable,
+          varied = property.hasAnnotation<ProtocolVaried>(),
+          annotations = property.annotations.filter { it is ProtocolCollection }.toSet()
+        )
+      )
     }
 
     return StructCodec(info.type.kotlinClass, properties)

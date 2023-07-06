@@ -37,36 +37,40 @@ class ConfigServer : IConfigServer, KoinComponent {
       routing {
         get("state/tankixprod_state.yml") {
           call.respondBytes {
-            mapper.writeValueAsBytes(StateConfiguration(
-              state = 0
-            ))
+            mapper.writeValueAsBytes(
+              StateConfiguration(
+                state = 0
+              )
+            )
           }
         }
 
         get("config/init.yml") {
           call.respondBytes {
-            mapper.writeValueAsBytes(InitConfiguration(
-              configVersion = "",
-              bundleDbVersion = "master-48606",
-              host = "127.0.0.1",
-              port = 5050,
-              resourcesUrl = "http://127.0.0.1:8080/resources",
-              configsUrl = "http://127.0.0.1:8080/config",
-              updateConfigUrl = "http://127.0.0.1:8080/update/{BuildTarget}.yml",
-              stateFileUrl = ""
-            ))
+            mapper.writeValueAsBytes(
+              InitConfiguration(
+                configVersion = "",
+                bundleDbVersion = "master-48606",
+                host = "127.0.0.1",
+                port = 5050,
+                resourcesUrl = "http://127.0.0.1:8080/resources",
+                configsUrl = "http://127.0.0.1:8080/config",
+                updateConfigUrl = "http://127.0.0.1:8080/update/{BuildTarget}.yml",
+                stateFileUrl = ""
+              )
+            )
           }
         }
 
         get("update/{buildTarget}") {
-          val buildTarget = requireNotNull(call.parameters["buildTarget"])
-
           call.respondBytes {
-            mapper.writeValueAsBytes(UpdateConfiguration(
-              lastClientVersion = "master-48606",
-              distributionUrl = "http://127.0.0.1:8080/update/$buildTarget.tgz",
-              executable = "tankix.exe"
-            ))
+            mapper.writeValueAsBytes(
+              UpdateConfiguration(
+                lastClientVersion = "master-48606",
+                distributionUrl = "http://127.0.0.1:8080/resources/StandaloneWindows/tankix.tgz",
+                executable = "tankix.exe"
+              )
+            )
           }
         }
 

@@ -1,9 +1,9 @@
 package jp.assasans.araumi.tx.server.protocol.command
 
 import mu.KotlinLogging
-import jp.assasans.araumi.tx.server.ecs.IEntity
-import jp.assasans.araumi.tx.server.ecs.IEvent
-import jp.assasans.araumi.tx.server.ecs.IServerEvent
+import jp.assasans.araumi.tx.server.ecs.entities.IEntity
+import jp.assasans.araumi.tx.server.ecs.events.IEvent
+import jp.assasans.araumi.tx.server.ecs.events.IServerEvent
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import jp.assasans.araumi.tx.server.protocol.ProtocolPosition
 import jp.assasans.araumi.tx.server.protocol.ProtocolVaried
@@ -21,7 +21,7 @@ class SendEventCommand(
       return
     }
 
-    event.execute(connection, entities)
     logger.info { "Received event $event for ${entities.size} entities" }
+    event.execute(connection, entities)
   }
 }
