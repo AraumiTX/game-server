@@ -1,6 +1,6 @@
 package jp.assasans.araumi.tx.server.protocol.codec.complex
 
-import jp.assasans.araumi.tx.server.ecs.GroupComponent
+import jp.assasans.araumi.tx.server.ecs.components.group.GroupComponent
 import jp.assasans.araumi.tx.server.extensions.kotlinClass
 import jp.assasans.araumi.tx.server.network.ProtocolBuffer
 import jp.assasans.araumi.tx.server.protocol.codec.Codec

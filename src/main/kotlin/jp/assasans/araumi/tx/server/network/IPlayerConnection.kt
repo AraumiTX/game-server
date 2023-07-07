@@ -14,8 +14,19 @@ import io.ktor.utils.io.*
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import jp.assasans.araumi.tx.server.ecs.IEntity
-import jp.assasans.araumi.tx.server.extensions.toHexString
+import jp.assasans.araumi.tx.server.ecs.entities.IEntity
+import jp.assasans.araumi.tx.server.ecs.Player
+import jp.assasans.araumi.tx.server.ecs.components.item.MountedItemComponent
+import jp.assasans.araumi.tx.server.ecs.events.entrance.login.SaveAutoLoginTokenEvent
+import jp.assasans.araumi.tx.server.ecs.entities.getComponent
+import jp.assasans.araumi.tx.server.ecs.components.user.UserGroupComponent
+import jp.assasans.araumi.tx.server.ecs.entities.templates.user.UserTemplate
+import jp.assasans.araumi.tx.server.ecs.events.user.friends.FriendsLoadedEvent
+import jp.assasans.araumi.tx.server.ecs.events.user.payment.PaymentSectionLoadedEvent
+import jp.assasans.araumi.tx.server.ecs.globalEntities.Coatings
+import jp.assasans.araumi.tx.server.ecs.globalEntities.Hulls
+import jp.assasans.araumi.tx.server.ecs.globalEntities.Paints
+import jp.assasans.araumi.tx.server.ecs.globalEntities.Weapons
 import jp.assasans.araumi.tx.server.protocol.IProtocol
 import jp.assasans.araumi.tx.server.protocol.buffer.OptionalMap
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo
@@ -25,113 +36,158 @@ import jp.assasans.araumi.tx.server.protocol.toShareCommand
 import jp.assasans.araumi.tx.server.utils.IWithCoroutineScope
 
 interface IPlayerConnection : IWithCoroutineScope {
-  val active: Boolean
+    val active: Boolean
 
-  suspend fun receive()
-  suspend fun decodeCommands()
-  suspend fun sendCommands()
+    var player: Player
+    var user: IEntity
 
-  fun send(command: ICommand)
-  suspend fun close()
+    var clientSession: IEntity
+
+    fun login(rememberMe: Boolean, passwordEncipher: String, hardwareFingerprint: String)
+
+    suspend fun receive()
+    suspend fun decodeCommands()
+    suspend fun sendCommands()
+
+    fun send(command: ICommand)
+    suspend fun close()
 }
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun IPlayerConnection.share(entity: IEntity) = send(entity.toShareCommand())
 
 abstract class PlayerConnection(
-  coroutineContext: CoroutineContext
+    coroutineContext: CoroutineContext
 ) : IPlayerConnection, KoinComponent {
-  private val logger = KotlinLogging.logger { }
+    private val logger = KotlinLogging.logger { }
 
-  protected val protocol: IProtocol by inject()
+    protected val protocol: IProtocol by inject()
 
-  private val outgoingCommands: Channel<ICommand> = Channel(Channel.UNLIMITED)
+    private val outgoingCommands: Channel<ICommand> = Channel(Channel.UNLIMITED)
 
-  override val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
+    override val coroutineScope = CoroutineScope(coroutineContext + SupervisorJob())
 
-  override fun send(command: ICommand) {
-    outgoingCommands.trySend(command).getOrThrow()
-  }
-
-  override suspend fun sendCommands() {
-    for(command in outgoingCommands) {
-      val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
-
-      protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).encode(buffer, command)
-
-      val channel = ByteChannel(true)
-      buffer.wrap(channel)
-      send(channel.toByteArray())
+    override fun send(command: ICommand) {
+        outgoingCommands.trySend(command).getOrThrow()
     }
-  }
 
-  protected abstract suspend fun send(data: ByteArray)
+    override suspend fun sendCommands() {
+        for(command in outgoingCommands) {
+            val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
+
+            protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).encode(buffer, command)
+
+            val channel = ByteChannel(true)
+            buffer.wrap(channel)
+            send(channel.toByteArray())
+        }
+    }
+
+    protected abstract suspend fun send(data: ByteArray)
 }
 
 class SocketPlayerConnection(
-  val socket: Socket,
-  coroutineContext: CoroutineContext
+    val socket: Socket,
+    coroutineContext: CoroutineContext
 ) : PlayerConnection(coroutineContext) {
-  private val logger = KotlinLogging.logger { }
+    private val logger = KotlinLogging.logger { }
 
-  private val reader: ByteReadChannel = socket.openReadChannel()
-  private val writer: ByteWriteChannel = socket.openWriteChannel(autoFlush = true)
+    private val reader: ByteReadChannel = socket.openReadChannel()
+    private val writer: ByteWriteChannel = socket.openWriteChannel(autoFlush = true)
 
-  // TODO: To allow logging of incoming packets
-  private val decodeBuffer: ByteBuffer = ByteBuffer.allocate(4096)
-  private val decodeChannel: ByteChannel = ByteChannel(autoFlush = true)
+    // TODO: To allow logging of incoming packets
+    private val decodeBuffer: ByteBuffer = ByteBuffer.allocate(4096)
+    private val decodeChannel: ByteChannel = ByteChannel(autoFlush = true)
 
-  override var active: Boolean = false
-    private set
+    override var active: Boolean = false
+        private set
 
-  override suspend fun receive() {
-    active = true
-    try {
-      while(active) {
-        decodeBuffer.clear()
-        val read = reader.readAvailable(decodeBuffer)
-        if(read == -1) break
+    override lateinit var player: Player
+    override lateinit var user: IEntity
 
-        logger.trace { "Received $read bytes: ${decodeBuffer.slice(0, read).toHexString()}" }
-        decodeChannel.writeFully(decodeBuffer.slice(0, read))
-      }
-    } catch(exception: Exception) {
-      logger.error(exception) { "An exception occurred in the $this receive loop" }
-    } finally {
-      active = false
-      logger.debug { "$this receive loop ended" }
-    }
-  }
+    override lateinit var clientSession: IEntity
 
-  override suspend fun decodeCommands() {
-    while(!decodeChannel.isClosedForRead) {
-      val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
-      require(buffer.unwrap(decodeChannel)) { "Failed to unwrap packet" }
-
-      while(buffer.reader.availableForRead > 0) {
-        // logger.trace { "decodeCommands protocol buffer available: ${buffer.reader.availableForRead}" }
-
-        val command = protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).decode(buffer)
-        logger.debug { "Received $command" }
-
-        try {
-          command.execute(this)
-        } catch(exception: Exception) {
-          logger.error(exception) { "Failed to execute command $command" }
+    override fun login(
+        rememberMe: Boolean,
+        passwordEncipher: String,
+        hardwareFingerprint: String
+    ) {
+        if (rememberMe) {
+            clientSession.send(SaveAutoLoginTokenEvent(username = player.username, token = ByteArray(32)))
         }
-      }
+
+        user = UserTemplate.create(player)
+
+        user.share(this)
+        clientSession.addComponent(user.getComponent<UserGroupComponent>())
+
+        val entities =
+            Hulls.getUserTemplateItems(this) +
+                    Weapons.getUserTemplateItems(this) +
+                    Paints.getUserTemplateItems(this) +
+                    Coatings.getUserTemplateItems(this)
+
+        entities.forEach {
+            it.share(this)
+
+            if (it.id == Hulls.Hunter.id || it.id == Weapons.Smoky.id || it.id == Paints.Green.id || it.id == Coatings.None.id)
+                it.addComponent(MountedItemComponent())
+        }
+
+        clientSession.send(PaymentSectionLoadedEvent())
+        clientSession.send(FriendsLoadedEvent(player.acceptedFriendsIds, player.incomingFriendsIds, player.outgoingFriendsIds))
+
+        logger.info { "${player.username} logged in" }
     }
-  }
 
-  override suspend fun send(data: ByteArray) {
-    writer.writeFully(data)
-    logger.trace { "Sent ${data.size} bytes: ${data.toHexString()}" }
-  }
+    override suspend fun receive() {
+        active = true
+        try {
+            while(active) {
+                decodeBuffer.clear()
+                val read = reader.readAvailable(decodeBuffer)
+                if(read == -1) break
 
-  override suspend fun close() {
-    active = false
-    withContext(Dispatchers.IO) { socket.close() }
-  }
+                //logger.trace { "Received $read bytes: ${decodeBuffer.slice(0, read).toHexString()}" }
+                decodeChannel.writeFully(decodeBuffer.slice(0, read))
+            }
+        } catch(exception: Exception) {
+            logger.error(exception) { "An exception occurred in the $this receive loop" }
+        } finally {
+            active = false
+            logger.debug { "$this receive loop ended" }
+        }
+    }
+
+    override suspend fun decodeCommands() {
+        while(!decodeChannel.isClosedForRead) {
+            val buffer = ProtocolBuffer(OptionalMap()) // TODO(Assasans): Object pooling
+            require(buffer.unwrap(decodeChannel)) { "Failed to unwrap packet" }
+
+            while(buffer.reader.availableForRead > 0) {
+                // logger.trace { "decodeCommands protocol buffer available: ${buffer.reader.availableForRead}" }
+
+                val command = protocol.getCodec<ICommand>(TypeCodecInfo(ICommand::class)).decode(buffer)
+                //logger.debug { "Received $command" }
+
+                try {
+                    command.execute(this)
+                } catch(exception: Exception) {
+                    logger.error(exception) { "Failed to execute command $command" }
+                }
+            }
+        }
+    }
+
+    override suspend fun send(data: ByteArray) {
+        writer.writeFully(data)
+        //logger.trace { "Sent ${data.size} bytes: ${data.toHexString()}" }
+    }
+
+    override suspend fun close() {
+        active = false
+        withContext(Dispatchers.IO) { socket.close() }
+    }
 }
 
 suspend inline fun SocketPlayerConnection(socket: Socket) = SocketPlayerConnection(socket, coroutineContext)

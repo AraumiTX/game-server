@@ -1,7 +1,7 @@
 package jp.assasans.araumi.tx.server.protocol.codec.factory
 
 import kotlin.reflect.full.isSubclassOf
-import jp.assasans.araumi.tx.server.ecs.GroupComponent
+import jp.assasans.araumi.tx.server.ecs.components.group.GroupComponent
 import jp.assasans.araumi.tx.server.extensions.kotlinClass
 import jp.assasans.araumi.tx.server.protocol.Protocol
 import jp.assasans.araumi.tx.server.protocol.codec.Codec
