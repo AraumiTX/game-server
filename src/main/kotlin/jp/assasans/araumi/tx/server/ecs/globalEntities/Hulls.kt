@@ -11,6 +11,7 @@ import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberProperties
 
+@Suppress("ObjectPropertyName", "SpellCheckingInspection")
 object Hulls : IGlobalEntities {
     fun getUserTemplateItems(player: IPlayerConnection) =
         Hulls::class.declaredMemberProperties

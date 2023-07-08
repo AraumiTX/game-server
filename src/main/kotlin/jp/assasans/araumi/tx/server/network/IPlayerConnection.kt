@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package jp.assasans.araumi.tx.server.network
 
 import java.nio.ByteBuffer
@@ -11,6 +13,7 @@ import kotlinx.coroutines.withContext
 import io.ktor.network.sockets.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.concurrent.*
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -23,10 +26,7 @@ import jp.assasans.araumi.tx.server.ecs.components.user.UserGroupComponent
 import jp.assasans.araumi.tx.server.ecs.entities.templates.user.UserTemplate
 import jp.assasans.araumi.tx.server.ecs.events.user.friends.FriendsLoadedEvent
 import jp.assasans.araumi.tx.server.ecs.events.user.payment.PaymentSectionLoadedEvent
-import jp.assasans.araumi.tx.server.ecs.globalEntities.Coatings
-import jp.assasans.araumi.tx.server.ecs.globalEntities.Hulls
-import jp.assasans.araumi.tx.server.ecs.globalEntities.Paints
-import jp.assasans.araumi.tx.server.ecs.globalEntities.Weapons
+import jp.assasans.araumi.tx.server.ecs.globalEntities.*
 import jp.assasans.araumi.tx.server.protocol.IProtocol
 import jp.assasans.araumi.tx.server.protocol.buffer.OptionalMap
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo
@@ -53,8 +53,9 @@ interface IPlayerConnection : IWithCoroutineScope {
     suspend fun close()
 }
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun IPlayerConnection.share(entity: IEntity) = send(entity.toShareCommand())
+inline fun IPlayerConnection.share(entity: IEntity) = entity.share(this)
+inline fun IPlayerConnection.share(vararg entities: IEntity) = entities.forEach(::share)
+inline fun IPlayerConnection.share(entities: Collection<IEntity>) = entities.forEach(::share)
 
 abstract class PlayerConnection(
     coroutineContext: CoroutineContext
@@ -112,25 +113,30 @@ class SocketPlayerConnection(
         passwordEncipher: String,
         hardwareFingerprint: String
     ) {
-        if (rememberMe) {
-            clientSession.send(SaveAutoLoginTokenEvent(username = player.username, token = ByteArray(32)))
-        }
+        if (rememberMe) clientSession.send(SaveAutoLoginTokenEvent(username = player.username, token = ByteArray(32)))
 
         user = UserTemplate.create(player)
 
-        user.share(this)
+        share(user)
         clientSession.addComponent(user.getComponent<UserGroupComponent>())
 
         val entities =
             Hulls.getUserTemplateItems(this) +
                     Weapons.getUserTemplateItems(this) +
                     Paints.getUserTemplateItems(this) +
-                    Coatings.getUserTemplateItems(this)
+                    Coatings.getUserTemplateItems(this) +
+                    HullSkins.getUserTemplateItems(this) +
+                    WeaponSkins.getUserTemplateItems(this)
 
         entities.forEach {
-            it.share(this)
+            share(it)
 
-            if (it.id == Hulls.Hunter.id || it.id == Weapons.Smoky.id || it.id == Paints.Green.id || it.id == Coatings.None.id)
+            if (it.id == Hulls.Hunter.id ||
+                it.id == Weapons.Smoky.id ||
+                it.id == Paints.Green.id ||
+                it.id == Coatings.None.id ||
+                it.id == HullSkins.HunterM0.id ||
+                it.id == WeaponSkins.SmokyM0.id)
                 it.addComponent(MountedItemComponent())
         }
 

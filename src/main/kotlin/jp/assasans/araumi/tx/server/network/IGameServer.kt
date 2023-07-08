@@ -39,7 +39,7 @@ class GameServer : IGameServer, KoinComponent {
         launch {
           val clientSession = ClientSessionTemplate.create()
 
-          clientSession.share(connection)
+          connection.share(clientSession)
           connection.clientSession = clientSession
         }
 

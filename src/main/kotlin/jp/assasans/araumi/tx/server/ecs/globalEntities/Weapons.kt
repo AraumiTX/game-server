@@ -12,6 +12,7 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.weapons.user.*
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 import kotlin.reflect.full.declaredMemberProperties
 
+@Suppress("ObjectPropertyName", "SpellCheckingInspection")
 object Weapons : IGlobalEntities {
     fun getUserTemplateItems(player: IPlayerConnection) =
         Weapons::class.declaredMemberProperties
