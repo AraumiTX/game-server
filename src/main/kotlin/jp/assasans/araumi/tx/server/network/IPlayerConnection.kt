@@ -152,7 +152,10 @@ class SocketPlayerConnection(
       Paints.getUserTemplateItems(this) +
       Coatings.getUserTemplateItems(this) +
       HullSkins.getUserTemplateItems(this) +
-      WeaponSkins.getUserTemplateItems(this)
+      WeaponSkins.getUserTemplateItems(this) +
+      Shells.getUserTemplateItems(this) +
+      Avatars.getUserTemplateItems(this) +
+      Graffiti.getUserTemplateItems(this)
 
     entities.forEach {
       share(it)
@@ -162,8 +165,10 @@ class SocketPlayerConnection(
          it.id == Paints.Green.id ||
          it.id == Coatings.None.id ||
          it.id == HullSkins.HunterM0.id ||
-         it.id == WeaponSkins.SmokyM0.id
-      )
+         it.id == WeaponSkins.SmokyM0.id ||
+         it.id == Shells.SmokyStandard.id ||
+         it.id == Avatars.MoroccoFlag.id ||
+         it.id == Graffiti.Birthday2017graffiti.id)
         it.addComponent(MountedItemComponent())
     }
 

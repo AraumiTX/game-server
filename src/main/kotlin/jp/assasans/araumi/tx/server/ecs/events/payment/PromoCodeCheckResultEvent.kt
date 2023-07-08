@@ -7,5 +7,5 @@ import jp.assasans.araumi.tx.server.protocol.ProtocolId
 @ProtocolId(1490937016798)
 data class PromoCodeCheckResultEvent(
   val code: String,
-  val resultEvent: PromoCodeCheckResult
+  val result: PromoCodeCheckResult
 ) : IEvent
