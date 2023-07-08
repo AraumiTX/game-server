@@ -13,7 +13,6 @@ data class EnterScreenEvent(
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
     val logger = KotlinLogging.logger { }
 
-    val (clientSession) = entities
-    logger.debug { "$clientSession entered screen $screen" }
+    logger.debug { "$connection entered screen $screen" }
   }
 }

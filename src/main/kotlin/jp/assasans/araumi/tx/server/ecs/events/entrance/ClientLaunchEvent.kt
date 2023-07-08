@@ -14,8 +14,7 @@ data class ClientLaunchEvent(
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
     val logger = KotlinLogging.logger { }
 
-    val (clientSession) = entities
-    clientSession.addComponent(WebIdComponent())
+    connection.clientSession.addComponent(WebIdComponent())
 
     logger.debug { "Executed launch event" }
   }

@@ -11,6 +11,8 @@ data class RequestChangePasswordEvent(
   val hardwareFingerprint: String
 ) : IServerEvent {
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
-    // todo Save and login
+    // todo Save
+
+    connection.login(true, passwordDigest, hardwareFingerprint)
   }
 }

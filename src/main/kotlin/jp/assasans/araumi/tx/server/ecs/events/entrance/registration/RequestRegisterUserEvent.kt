@@ -1,8 +1,11 @@
 package jp.assasans.araumi.tx.server.ecs.events.entrance.registration
 
+import mu.KotlinLogging
+import jp.assasans.araumi.tx.server.ecs.Player
 import jp.assasans.araumi.tx.server.ecs.entities.IEntity
 import jp.assasans.araumi.tx.server.ecs.events.IServerEvent
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
+import jp.assasans.araumi.tx.server.network.send
 import jp.assasans.araumi.tx.server.protocol.ProtocolId
 import jp.assasans.araumi.tx.server.protocol.ProtocolName
 
@@ -17,9 +20,16 @@ data class RequestRegisterUserEvent(
   val quickRegistration: Boolean
 ) : IServerEvent {
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
-    val (clientSession) = entities
+    val logger = KotlinLogging.logger { }
 
-    // Client-side bug: missing [JoinAll] in the signature of [RegistrationScreenSystem#UnlockScreenOnFail]
-    clientSession.send(RegistrationFailedEvent())
+    logger.debug { "Register player: $username" }
+
+    if(username.contains("M8")) {
+      connection.send(RegistrationFailedEvent())
+      return
+    }
+
+    connection.player = Player(username, email).also { it.subscribed = subscribed }
+    connection.register(username, encryptedPasswordDigest, email, hardwareFingerprint, subscribed, steam, quickRegistration)
   }
 }

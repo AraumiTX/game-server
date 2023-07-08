@@ -4,9 +4,11 @@ import kotlin.coroutines.coroutineContext
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import jp.assasans.araumi.tx.server.ecs.entities.templates.entrance.ClientSessionTemplate
+import jp.assasans.araumi.tx.server.protocol.command.InitTimeCommand
 import jp.assasans.araumi.tx.server.utils.IWithCoroutineScope
 
 interface IGameServer : IWithCoroutineScope {
@@ -39,6 +41,7 @@ class GameServer : IGameServer, KoinComponent {
         launch {
           val clientSession = ClientSessionTemplate.create()
 
+          connection.send(InitTimeCommand(Clock.System.now().toEpochMilliseconds()))
           connection.share(clientSession)
           connection.clientSession = clientSession
         }

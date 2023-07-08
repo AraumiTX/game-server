@@ -1,5 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
-
 package jp.assasans.araumi.tx.server.network
 
 import java.nio.ByteBuffer
@@ -13,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -22,9 +21,10 @@ import jp.assasans.araumi.tx.server.ecs.components.user.UserGroupComponent
 import jp.assasans.araumi.tx.server.ecs.entities.IEntity
 import jp.assasans.araumi.tx.server.ecs.entities.getComponent
 import jp.assasans.araumi.tx.server.ecs.entities.templates.user.UserTemplate
+import jp.assasans.araumi.tx.server.ecs.events.IEvent
 import jp.assasans.araumi.tx.server.ecs.events.entrance.login.SaveAutoLoginTokenEvent
+import jp.assasans.araumi.tx.server.ecs.events.payment.PaymentSectionLoadedEvent
 import jp.assasans.araumi.tx.server.ecs.events.user.friends.FriendsLoadedEvent
-import jp.assasans.araumi.tx.server.ecs.events.user.payment.PaymentSectionLoadedEvent
 import jp.assasans.araumi.tx.server.ecs.globalEntities.*
 import jp.assasans.araumi.tx.server.protocol.IProtocol
 import jp.assasans.araumi.tx.server.protocol.buffer.OptionalMap
@@ -41,6 +41,16 @@ interface IPlayerConnection : IWithCoroutineScope {
 
   var clientSession: IEntity
 
+  fun register(
+    username: String,
+    encryptedPasswordDigest: String,
+    email: String,
+    hardwareFingerprint: String,
+    subscribed: Boolean,
+    steam: Boolean,
+    quickRegistration: Boolean
+  )
+
   fun login(rememberMe: Boolean, passwordEncipher: String, hardwareFingerprint: String)
 
   suspend fun receive()
@@ -51,9 +61,11 @@ interface IPlayerConnection : IWithCoroutineScope {
   suspend fun close()
 }
 
-inline fun IPlayerConnection.share(entity: IEntity) = entity.share(this)
-inline fun IPlayerConnection.share(vararg entities: IEntity) = entities.forEach(::share)
-inline fun IPlayerConnection.share(entities: Collection<IEntity>) = entities.forEach(::share)
+fun IPlayerConnection.share(entity: IEntity) = entity.share(this)
+fun IPlayerConnection.share(vararg entities: IEntity) = entities.forEach(::share)
+fun IPlayerConnection.share(entities: Collection<IEntity>) = entities.forEach(::share)
+
+fun IPlayerConnection.send(event: IEvent) = clientSession.send(event)
 
 abstract class PlayerConnection(
   coroutineContext: CoroutineContext
@@ -106,12 +118,28 @@ class SocketPlayerConnection(
 
   override lateinit var clientSession: IEntity
 
+  override fun register(
+    username: String,
+    encryptedPasswordDigest: String,
+    email: String,
+    hardwareFingerprint: String,
+    subscribed: Boolean,
+    steam: Boolean,
+    quickRegistration: Boolean
+  ) {
+    player.registrationTime = Clock.System.now()
+
+    login(true, encryptedPasswordDigest, hardwareFingerprint)
+  }
+
   override fun login(
     rememberMe: Boolean,
     passwordEncipher: String,
     hardwareFingerprint: String
   ) {
-    if(rememberMe) clientSession.send(SaveAutoLoginTokenEvent(username = player.username, token = ByteArray(32)))
+    player.lastLoginTime = Clock.System.now()
+
+    if(rememberMe) clientSession.send(SaveAutoLoginTokenEvent(player.username, token = ByteArray(32)))
 
     user = UserTemplate.create(player)
 
@@ -140,7 +168,7 @@ class SocketPlayerConnection(
     }
 
     clientSession.send(PaymentSectionLoadedEvent())
-    clientSession.send(FriendsLoadedEvent(player.acceptedFriendsIds, player.incomingFriendsIds, player.outgoingFriendsIds))
+    clientSession.send(FriendsLoadedEvent(player.acceptedFriendIds, player.incomingFriendIds, player.outgoingFriendIds))
 
     logger.info { "${player.username} logged in" }
   }
@@ -193,6 +221,15 @@ class SocketPlayerConnection(
     active = false
     withContext(Dispatchers.IO) { socket.close() }
   }
+
+  override fun toString() =
+    buildString {
+      append('[')
+      if(::player.isInitialized) append(player.username + " | ")
+      append("${socket.remoteAddress} ")
+      if(::clientSession.isInitialized) append("(${clientSession.id})")
+      append(']')
+    }
 }
 
 suspend inline fun SocketPlayerConnection(socket: Socket) = SocketPlayerConnection(socket, coroutineContext)

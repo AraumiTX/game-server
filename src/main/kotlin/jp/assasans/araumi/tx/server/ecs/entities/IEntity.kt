@@ -29,9 +29,8 @@ interface IEntity {
 inline fun <reified T : IComponent> IEntity.hasComponent() = hasComponent(T::class)
 inline fun <reified T : IComponent> IEntity.getComponent(): T = getComponent(T::class) as T
 inline fun <reified T : IComponent> IEntity.removeComponent() = removeComponent(T::class)
-inline fun <reified T : IComponent> IEntity.changeComponent(block: T.() -> Unit) {
+inline fun <reified T : IComponent> IEntity.changeComponent(block: T.() -> Unit) =
   changeComponent(getComponent<T>().apply(block))
-}
 
 inline fun <reified T : IComponent> Array<IEntity>.with(): T = asIterable().singleOf()
 

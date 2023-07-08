@@ -31,7 +31,7 @@ fun IEntity.toShareCommand() = EntityShareCommand(
 fun IEntity.toUnshareCommand() = EntityUnshareCommand(entity = this)
 
 val KClass<*>.protocolId: ProtocolId
-  get() = requireNotNull(findAnnotation())
+  get() = requireNotNull(findAnnotation()) { "Missing @ProtocolId on ${this.simpleName}" }
 
 class Protocol : IProtocol, KoinComponent {
   private val logger = KotlinLogging.logger { }

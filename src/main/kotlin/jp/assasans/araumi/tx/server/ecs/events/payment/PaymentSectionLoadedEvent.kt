@@ -1,4 +1,4 @@
-package jp.assasans.araumi.tx.server.ecs.events.user.payment
+package jp.assasans.araumi.tx.server.ecs.events.payment
 
 import jp.assasans.araumi.tx.server.ecs.events.IEvent
 import jp.assasans.araumi.tx.server.protocol.ProtocolId

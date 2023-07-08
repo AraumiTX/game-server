@@ -1,5 +1,6 @@
 package jp.assasans.araumi.tx.server.ecs.events.user.settings
 
+import jp.assasans.araumi.tx.server.ecs.components.user.UserCountryComponent
 import jp.assasans.araumi.tx.server.ecs.entities.IEntity
 import jp.assasans.araumi.tx.server.ecs.events.IServerEvent
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
@@ -10,6 +11,7 @@ data class ConfirmUserCountryEvent(
   val countryCode: String
 ) : IServerEvent {
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
-    // todo
+    connection.player.countryCode = countryCode
+    connection.user.changeComponent(UserCountryComponent(countryCode))
   }
 }

@@ -1,5 +1,6 @@
 package jp.assasans.araumi.tx.server.ecs.events.entrance.restorePassword
 
+import jp.assasans.araumi.tx.server.ecs.Player
 import jp.assasans.araumi.tx.server.ecs.components.entrance.restorePassword.RestorePasswordCodeSentComponent
 import jp.assasans.araumi.tx.server.ecs.entities.IEntity
 import jp.assasans.araumi.tx.server.ecs.events.IServerEvent
@@ -11,7 +12,8 @@ data class RestorePasswordByEmailEvent(
   val email: String
 ) : IServerEvent {
   override suspend fun execute(connection: IPlayerConnection, entities: Array<IEntity>) {
-    val (clientSession) = entities
-    clientSession.addComponent(RestorePasswordCodeSentComponent(email))
+    connection.player = Player(email.substringBefore('@'), email)
+
+    connection.clientSession.addComponent(RestorePasswordCodeSentComponent(email))
   }
 }
