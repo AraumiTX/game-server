@@ -13,8 +13,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.hulls.user.TankUserIt
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Hulls : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Hulls : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Hulls::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {
@@ -25,6 +25,16 @@ object Hulls : IGlobalEntities {
 
         // todo experience
       }
+
+  fun getDefaultSkins() = mapOf(
+    (Dictator to HullSkins.DictatorM0),
+    (Hornet to HullSkins.HornetM0),
+    (Hunter to HullSkins.HunterM0),
+    (Mammoth to HullSkins.MammothM0),
+    (Titan to HullSkins.TitanM0),
+    (Viking to HullSkins.VikingM0),
+    (Wasp to HullSkins.WaspM0)
+  )
 
   val Dictator = entity(655588521) {
     templateAccessor(TankMarketItemTemplate(), "garage/tank/dictator")

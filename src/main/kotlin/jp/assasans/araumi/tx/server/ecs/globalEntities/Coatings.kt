@@ -12,8 +12,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.weapons.user.WeaponPa
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Coatings : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Coatings : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Coatings::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

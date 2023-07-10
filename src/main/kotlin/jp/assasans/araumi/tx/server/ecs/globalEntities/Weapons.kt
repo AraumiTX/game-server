@@ -13,8 +13,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.weapons.user.*
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Weapons : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Weapons : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Weapons::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {
@@ -38,6 +38,34 @@ object Weapons : IGlobalEntities {
 
         // todo experience
       }
+
+  fun getDefaultSkins() = mapOf(
+    (Flamethrower to WeaponSkins.FlamethrowerM0),
+    (Freeze to WeaponSkins.FreezeM0),
+    (Hammer to WeaponSkins.HammerM0),
+    (Isis to WeaponSkins.IsisM0),
+    (Railgun to WeaponSkins.RailgunM0),
+    (Ricochet to WeaponSkins.RicochetM0),
+    (Shaft to WeaponSkins.ShaftM0),
+    (Smoky to WeaponSkins.SmokyM0),
+    (Thunder to WeaponSkins.ThunderM0),
+    (Twins to WeaponSkins.TwinsM0),
+    (Vulcan to WeaponSkins.VulcanM0)
+  )
+
+  fun getDefaultShells() = mapOf(
+    (Flamethrower to Shells.FlamethrowerOrange),
+    (Freeze to Shells.FreezeSkyblue),
+    (Hammer to Shells.HammerStandard),
+    (Isis to Shells.IsisStandard),
+    (Railgun to Shells.RailgunPaleblue),
+    (Ricochet to Shells.RicochetAurulent),
+    (Shaft to Shells.ShaftStandard),
+    (Smoky to Shells.SmokyStandard),
+    (Thunder to Shells.ThunderStandard),
+    (Twins to Shells.TwinsBlue),
+    (Vulcan to Shells.VulcanStandard)
+  )
 
   val Flamethrower = entity(1021054379) {
     templateAccessor(FlamethrowerMarketItemTemplate(), "garage/weapon/flamethrower")

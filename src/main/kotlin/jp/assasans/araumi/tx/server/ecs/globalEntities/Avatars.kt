@@ -12,8 +12,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.avatars.user.AvatarUs
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Avatars : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Avatars : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Avatars::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

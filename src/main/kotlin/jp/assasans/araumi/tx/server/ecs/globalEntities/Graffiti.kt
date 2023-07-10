@@ -15,8 +15,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.graffiti.user.Graffit
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Graffiti : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Graffiti : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Graffiti::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

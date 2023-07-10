@@ -12,8 +12,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.hulls.user.TankPaintU
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Paints : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Paints : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Paints::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

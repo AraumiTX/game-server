@@ -14,8 +14,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.weapons.user.WeaponSk
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object WeaponSkins : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object WeaponSkins : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     WeaponSkins::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

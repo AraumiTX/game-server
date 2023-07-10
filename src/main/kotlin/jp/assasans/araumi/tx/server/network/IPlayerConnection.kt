@@ -16,16 +16,12 @@ import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import jp.assasans.araumi.tx.server.ecs.Player
-import jp.assasans.araumi.tx.server.ecs.components.item.MountedItemComponent
 import jp.assasans.araumi.tx.server.ecs.components.user.UserGroupComponent
 import jp.assasans.araumi.tx.server.ecs.entities.IEntity
 import jp.assasans.araumi.tx.server.ecs.entities.getComponent
 import jp.assasans.araumi.tx.server.ecs.entities.templates.user.UserTemplate
 import jp.assasans.araumi.tx.server.ecs.events.IEvent
 import jp.assasans.araumi.tx.server.ecs.events.entrance.login.SaveAutoLoginTokenEvent
-import jp.assasans.araumi.tx.server.ecs.events.payment.PaymentSectionLoadedEvent
-import jp.assasans.araumi.tx.server.ecs.events.user.friends.FriendsLoadedEvent
-import jp.assasans.araumi.tx.server.ecs.globalEntities.*
 import jp.assasans.araumi.tx.server.protocol.IProtocol
 import jp.assasans.araumi.tx.server.protocol.buffer.OptionalMap
 import jp.assasans.araumi.tx.server.protocol.codec.info.TypeCodecInfo
@@ -63,7 +59,7 @@ interface IPlayerConnection : IWithCoroutineScope {
 
 fun IPlayerConnection.share(entity: IEntity) = entity.share(this)
 fun IPlayerConnection.share(vararg entities: IEntity) = entities.forEach(::share)
-fun IPlayerConnection.share(entities: Collection<IEntity>) = entities.forEach(::share)
+fun IPlayerConnection.share(entities: Iterable<IEntity>) = entities.forEach(::share)
 
 fun IPlayerConnection.send(event: IEvent) = clientSession.send(event)
 
@@ -139,41 +135,15 @@ class SocketPlayerConnection(
   ) {
     player.lastLoginTime = Clock.System.now()
 
-    if(rememberMe) clientSession.send(SaveAutoLoginTokenEvent(player.username, token = ByteArray(32)))
+    if(rememberMe)
+      clientSession.send(SaveAutoLoginTokenEvent(player.username, token = ByteArray(32)))
 
     user = UserTemplate.create(player)
 
     share(user)
     clientSession.addComponent(user.getComponent<UserGroupComponent>())
 
-    val entities =
-      Hulls.getUserTemplateItems(this) +
-      Weapons.getUserTemplateItems(this) +
-      Paints.getUserTemplateItems(this) +
-      Coatings.getUserTemplateItems(this) +
-      HullSkins.getUserTemplateItems(this) +
-      WeaponSkins.getUserTemplateItems(this) +
-      Shells.getUserTemplateItems(this) +
-      Avatars.getUserTemplateItems(this) +
-      Graffiti.getUserTemplateItems(this)
 
-    entities.forEach {
-      share(it)
-
-      if(it.id == Hulls.Hunter.id ||
-         it.id == Weapons.Smoky.id ||
-         it.id == Paints.Green.id ||
-         it.id == Coatings.None.id ||
-         it.id == HullSkins.HunterM0.id ||
-         it.id == WeaponSkins.SmokyM0.id ||
-         it.id == Shells.SmokyStandard.id ||
-         it.id == Avatars.MoroccoFlag.id ||
-         it.id == Graffiti.Birthday2017graffiti.id)
-        it.addComponent(MountedItemComponent())
-    }
-
-    clientSession.send(PaymentSectionLoadedEvent())
-    clientSession.send(FriendsLoadedEvent(player.acceptedFriendIds, player.incomingFriendIds, player.outgoingFriendIds))
 
     logger.info { "${player.username} logged in" }
   }

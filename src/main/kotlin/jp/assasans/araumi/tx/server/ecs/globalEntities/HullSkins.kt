@@ -14,8 +14,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.hulls.user.HullSkinUs
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object HullSkins : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object HullSkins : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     HullSkins::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {

@@ -13,8 +13,8 @@ import jp.assasans.araumi.tx.server.ecs.entities.templates.weapons.user.ShellUse
 import jp.assasans.araumi.tx.server.network.IPlayerConnection
 
 @Suppress("ObjectPropertyName", "SpellCheckingInspection")
-object Shells : IGlobalEntities {
-  fun getUserTemplateItems(player: IPlayerConnection) =
+object Shells : IUserGlobalEntities {
+  override fun getUserTemplateItems(player: IPlayerConnection) =
     Shells::class.declaredMemberProperties
       .map { (it.get(this) as IEntity).clone() }
       .onEach {
